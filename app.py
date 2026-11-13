@@ -1,13 +1,45 @@
 import streamlit as st
-import joblib
-import pandas as pd
+import requests
+import os
 
-@st.cache_resource
-def load_model():
-    model = joblib.load("models/random_forest_pipeline.joblib")
-    return model
+API_URL = os.getenv(
+    "API_URL",
+    "http://127.0.0.1:8000/predict"
+)
 
-model = load_model()
+def get_auth_headers():
+
+    # Authenticate only when running on Google Cloud Run
+    if os.getenv("K_SERVICE"):
+
+        token_url = (
+            "http://metadata.google.internal/computeMetadata/v1/"
+            "instance/service-accounts/default/identity"
+        )
+
+        audience = API_URL.rsplit("/", 1)[0]
+
+        response = requests.get(
+            token_url,
+            params={
+                "audience": audience,
+                "format": "full"
+            },
+            headers={
+                "Metadata-Flavor": "Google"
+            },
+            timeout=5
+        )
+
+        response.raise_for_status()
+
+        return {
+            "Authorization": f"Bearer {response.text}"
+        }
+
+    # Local development does not require Google authentication
+    return {}
+
 
 st.set_page_config(
     page_title="Breast Cancer Prediction",
@@ -50,7 +82,7 @@ st.divider()
 
 if st.button("Predict Result", type="primary"):
 
-    input_data = pd.DataFrame([{
+    input_data = {
         "Clump_Thickness": clump_thickness,
         "Uniformity_Cell_Size": cell_size,
         "Uniformity_Cell_Shape": cell_shape,
@@ -60,26 +92,43 @@ if st.button("Predict Result", type="primary"):
         "Bland_Chromatin": bland_chromatin,
         "Normal_Nucleoli": normal_nucleoli,
         "Mitoses": mitoses
-    }])
+    }
 
-    prediction = model.predict(input_data)[0]
+    try:
+        headers = get_auth_headers()
 
-    probability = model.predict_proba(input_data)[0]
+        response = requests.post(
+            API_URL,
+            json=input_data,
+            headers=headers,
+            timeout=30
+        )
 
-    malignant_probability = probability[1]
-    
-    if prediction == 1:
-        st.error("Prediction: Malignant")
-    else:
-        st.success("Prediction: Benign")
+        response.raise_for_status()
 
-    st.metric(
-        label="Malignant Probability",
-        value=f"{malignant_probability * 100:.2f}%"
-    )
+        result = response.json()
 
-    st.progress(float(malignant_probability))
-    
+        prediction = result["prediction"]
+        malignant_probability = result["malignant_probability"]
+
+        if prediction == "Malignant":
+            st.error("Prediction: Malignant")
+        else:
+            st.success("Prediction: Benign")
+
+        st.metric(
+            label="Malignant Probability",
+            value=f"{malignant_probability * 100:.2f}%"
+        )
+
+        st.progress(float(malignant_probability))
+
+    except requests.exceptions.ConnectionError:
+        st.error("Cannot connect to FastAPI. Please check whether the backend is running.")
+
+    except requests.exceptions.RequestException as e:
+        st.error(f"API request failed: {e}")
+
     st.divider()
 
 st.subheader("Model Information")
