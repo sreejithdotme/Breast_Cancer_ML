@@ -567,6 +567,50 @@ Dataset documentation: `data/breast-cancer-wisconsin.names`
 
 ---
 
+## 16. Application Screenshots
+
+The following screenshots show the application's interface, prediction workflow, API documentation, container setup, and cloud deployment.
+
+### Streamlit Application Interface
+
+![Streamlit Application Interface](screenshots/streamlit-interface.png)
+
+The main Streamlit interface where users can enter the nine cell measurements and view information about the trained Random Forest model and its evaluation metrics.
+
+### Breast Cancer Prediction Results
+
+**Malignant prediction**
+
+![Malignant Prediction Result](screenshots/prediction-result-malignant.png)
+
+Example output in which the model classifies the entered cell measurements as **Malignant**, with a displayed malignant probability of 93.05%.
+
+**Benign prediction**
+
+![Benign Prediction Result](screenshots/prediction-result-benign.png)
+
+Example output in which the model classifies the entered cell measurements as **Benign**, with a displayed malignant probability of 28.83%.
+
+### FastAPI Swagger Documentation
+
+![FastAPI Swagger Documentation](screenshots/fastapi-swagger.png)
+
+The FastAPI Swagger UI displays the available API endpoints and the `/predict` request body, allowing the prediction endpoint to be explored and tested.
+
+### Docker Containers
+
+![Docker Containers](screenshots/docker-containers.png)
+
+Docker Desktop showing the project containers, including the Streamlit frontend container and its exposed application port.
+
+### Google Cloud Run Deployment
+
+![Google Cloud Run Services](screenshots/gcp-cloud-run.png)
+
+Google Cloud Run showing the separately deployed frontend and backend services for the application.
+
+---
+
 ## Author
 
 Developed as an end-to-end Machine Learning portfolio project.
